@@ -1,5 +1,8 @@
 # learn-machine-learning
 
+## 機械学習において注意すること
+* 入力変数通しが高い相関関係を持つと思うような学習結果を得られない可能性がある
+
 ## 教師あり学習の目的
 教師あり学習の目的は、未知なデータに対しても高い性能を発揮するようにモデルを学習すること。
 学習時に用いなかったデータに対しては予測値と目標値の差異が大きくなってしまう現象を、過学習 (overfitting)と呼ぶ。
@@ -107,4 +110,76 @@ plt.bar(x=columns, height=model.coef_);
 
 # 学習後のバイアス b
 model.intercept_
+```
+
+## 過学習を抑える方法
+
+過学習を抑制するアプローチ。
+
+1. データセットのサンプルサイズを増やす
+2. ハイパーパラメータを調整する
+3. 他のアルゴリズムを使用する
+
+## 可視化
+
+```
+# 箱を準備
+fig = plt.figure(figsize=(7, 10))
+
+# 重回帰分析
+ax1 = fig.add_subplot(2, 1, 1)
+ax1.bar(x=columns, height=model.coef_)
+ax1.set_title('Linear Regression')
+
+# リッジ回帰
+ax2 = fig.add_subplot(2, 1, 2)
+ax2.bar(x=columns, height=ridge.coef_)
+ax2.set_title('Ridge Regression');
+```
+
+## 多重共線性
+入力変数同士の相関が強いものが含まれている場合、多重共線性 (Multicollinearity) という問題が起こる。
+
+* 対処方法
+  - データセットの中から相関の高い入力変数のどちらかを削除する
+  - 使用するアルゴリズムを変更する
+
+`.corr()` を使用して相関関係を表す数値（相関係数）を確認することができる。
+
+相関係数は 1 が最大で、その 2 つの変数が完全に正の相関があることを表す。
+
+```
+# 相関係数の算出
+df_corr = df.corr()
+
+# 可視化
+plt.figure(figsize=(12, 8))
+sns.heatmap(df_corr.iloc[:20, :20], annot=True);
+
+# 特定の変数を可視化
+sns.jointplot(x='x1', y='x16', data=df);
+```
+
+### 多重共線性の対処方法 -> Partial Least Squares (PLS)
+Partial Least Squares (PLS) は多重共線性の問題の対処法として有力なアルゴリズム。
+
+* ステップ1: 入力値と目標値の共分散が最大になるように主成分を抽出
+* ステップ2: 抽出された主成分に対して重回帰分析を用いてモデルの学習を行う
+
+「主成分を抽出」とは、100 個の特徴量があった場合にその特徴量の数を分散を用いて 10 や 20 個などに削減する手法（次元削減）。
+
+主成分を抽出するときに目標値の情報を使う。
+
+```
+# モデルの定義（ n_components:7 とする）
+# n_componentsは何次元に落とすかのパラメータであり、試行錯誤しながらこの数値をいじる
+from sklearn.cross_decomposition import PLSRegression
+pls = PLSRegression(n_components=7)
+
+# モデルの学習
+pls.fit(x_train, t_train)
+
+# モデルの検証
+print('train score : ', pls.score(x_train, t_train))
+print('test score : ', pls.score(x_test, t_test))
 ```
