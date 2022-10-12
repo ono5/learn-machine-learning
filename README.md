@@ -3,6 +3,7 @@
 ## 機械学習において注意すること
 * 入力変数通しが高い相関関係を持つと思うような学習結果を得られない可能性がある
   - 対処方法として、Partial Least Squares (PLS)が有効
+  - データには欠損値や外れ値、Typeの違いなどあるため、データの前処理が必要
 
 ## 教師あり学習の目的
 教師あり学習の目的は、未知なデータに対しても高い性能を発揮するようにモデルを学習すること。
@@ -105,10 +106,6 @@ print('目標値: ', t_test[0])
 # 学習後のパラメータ w
 model.coef_
 
-# パラメータの分布をヒストグラムで可視化
-plt.figure(figsize=(10, 7))
-plt.bar(x=columns, height=model.coef_);
-
 # 学習後のバイアス b
 model.intercept_
 ```
@@ -183,4 +180,221 @@ pls.fit(x_train, t_train)
 # モデルの検証
 print('train score : ', pls.score(x_train, t_train))
 print('test score : ', pls.score(x_test, t_test))
+```
+
+## データの前処理
+### 重複行の確認 / 削除
+
+```
+# 重複行の確認
+
+# keep=False で重複データをすべて True , それ以外を False
+df.duplicated(keep=False)
+
+# 要約を出力
+df.duplicated(keep=False).value_counts()
+
+# 重複行の削除
+df.drop_duplicates()
+```
+
+### 欠損値処理
+csv中の空白は`セル欠損値(NaN)` となる。
+
+
+|方法|使う場面|
+|:--|:--|
+欠損値を含む行（サンプル）を取り除く|欠損値の数が同一列内で多くない場合
+欠損値を含む列（入力変数）を取り除く|欠損値の数が同一列内で多すぎる場合
+
+```
+# 欠損値の確認
+df.isnull()[:5] # [:5] で表示する行を指定
+
+# 欠損値の数を確認
+df.isnull().sum()
+
+# 欠損値の除去(dropna(subset=['列名'], axis=0))
+# 列方向に削除 -> axisを１
+# dropna()の場合は欠損値が含まれる行が全て削除
+
+# 行の削除
+df = df.dropna(subset=['charges'])
+# 複数指定できる
+df = df.dropna(subset=['price','horsepower','peak-rpm'])
+
+# 列ごと削除
+df = df.drop(labels='rank', axis=1)
+```
+
+### 欠損値の補完
+欠損値補完は、欠損値を他の値で埋める方法。
+
+以下の方法で埋める。
+1. 平均値(一般的に用いられる)
+2. 中央値
+
+#### 数値
+`plt.hist(df['bmi'])`などで、データのばらつき、外れ値などを事前に確認する。
+
+```
+# データのばらつき確認
+plt.hist(df['bmi'])
+
+# 平均値の確認
+df['bmi'].mean()
+
+# 欠損値を平均値で補完
+# fillna({'補完対象の列名'：補完する値})
+# df['列名'].mean() で指定した列の平均値を算出
+df = df.fillna({'bmi':df['bmi'].mean()})
+```
+
+#### 文字列
+文字列に対しての欠損値補完では 最頻値 を使用するケースが多い。
+
+```
+# 入力文字の種類を確認(array(['yes', nan, 'no'], dtype=object))
+df['smoker'].unique()
+
+# 一番多い文字数を確認
+df['smoker'].mode()
+
+0    no
+dtype: object
+
+# noを取り出す
+df['smoker'].mode()[0]
+
+# 最頻値を使用して欠損値を補完(noが一番多いので、noで埋める)
+df = df.fillna({'smoker':df['smoker'].mode()[0]})
+```
+
+## 特徴量変換
+
+### カテゴリカル変数の取り扱い
+文字列データ含め、カテゴリを表すデータをカテゴリカル変数(質的変数)と呼ぶ。
+
+「男性, 女性」というような文字列データはカテゴリカル変数であり、
+男性を0,女性を1と置き換えた「0, 1」のデータもカテゴリカル変数。
+
+```
+# カテゴリカル変数を含んだデータのみを抽出(文字列データを取り出し)
+df_obj = df.select_dtypes(include='object')
+
+# ユニークな値の数を確認
+df_uni = df_obj.nunique()
+```
+
+### Label Encoding　
+Label Encoding は各カテゴリに 0, 1, 2, ... と数値を割り振る変換。
+
+```
+# モデルの宣言
+from sklearn.preprocessing import LabelEncoder
+le = LabelEncoder()
+
+le.fit(df['gender'])
+
+# 適用
+le.transform(df['gender'])
+
+# 値の入れ替え
+df['gender'] = le.transform(df['gender'])
+
+# ラベル変換された値についての確認
+le.classes_
+```
+
+小技。
+
+```
+from sklearn.preprocessing import LabelEncoder
+# ユニークな値が 2 種類の列名のみ取得
+df_cols = df_uni[df_uni == 2].index
+
+for col in df_cols:
+  le = LabelEncoder()
+  le.fit(df[col])
+  df[col] = le.transform(df[col])
+```
+
+### One-Hot Encoding
+One-Hot Encoding はダミー変数化とも言われ、各カテゴリの値ごとに 0, 1の列を作成する。
+
+```
+# drop_firstは、Trueにすることで変換後の先頭列を除去
+df = pd.get_dummies(df, drop_first=True)
+```
+
+入力変数の数が増える点がOne-Hot Encodingのデメリット。
+
+## データの統計量
+
+```
+# データ統計量の確認
+df.describe()
+```
+
+## 可視化
+
+```
+# ヒストグラム表示
+plt.figure(figsize=(10, 7))
+plt.bar(x=columns, height=model.coef_);
+
+plt.hist(df['bmi'])
+```
+
+## 特徴量エンジニアリング
+特徴量エンジニアリングは精度をあげる為の前処理の１つで、現在あるデータを用い、より有用なデータを作成すること。
+
+多いカテゴリをより有用な少ないカテゴリに分け直す。
+
+車を例に上げる。
+
+```
+# クラス分けのリストの定義
+class_3 = ['audi', 'bmw', 'jaguar', 'mercedes-benz', 'porsche']
+class_2 = ['alfa-romero', 'chevrolet',  'mercury', 'volvo', 'toyota', 'plymouth', 'dodge']
+class_1 = ['honda', 'isuzu', 'mazda', 'mitsubishi', 'nissan', 'peugot', 'saab', 'subaru', 'volkswagen']
+
+# それぞれを置換するリストの作成
+maker_class = []
+for i in df_obj['make']:
+    if i in class_3:
+        maker_class.append(3)
+    elif i in class_2:
+        maker_class.append(2)
+    elif i in class_1:
+        maker_class.append(1)
+
+# リストの確認
+maker_class[:10]
+[2, 2, 2, 3, 3, 3, 3, 3, 3, 3]
+```
+
+## 外れ値除去
+外れ値を除去することで、精度向上を目指す。
+
+### 3σ 法（平均値ベース）
+平均値をベースに外れ値を除去する。
+
+```
+mu = df['price'].mean() # 平均値
+sigma = df['price'].std() # 標準偏差
+# 3σ法の中身を取得
+df3 = df[(mu - 3 * sigma <= df['price']) & (df['price'] <= mu + 3 * sigma)]
+```
+
+### ハンペル判別法（中央値ベース）
+中央値ベースに外れ値を除去する。
+
+```
+# MADを算出
+median = df['price'].median()
+
+# absは指定の値を絶対値に変換。np.medianで中央値を算出
+# 1.4826は公式の数値
+MAD = 1.4826 * np.median(abs(df['price']-median))
 ```
