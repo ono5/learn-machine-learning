@@ -1,7 +1,7 @@
 # learn-machine-learning
 
 ## 機械学習において注意すること
-* 入力変数通しが高い相関関係を持つと思うような学習結果を得られない可能性がある
+* 入力変数同士が高い相関関係を持つと思うような学習結果を得られない可能性がある
   - 対処方法として、Partial Least Squares (PLS)が有効
   - データには欠損値や外れ値、Typeの違いなどあるため、データの前処理が必要
 
@@ -117,23 +117,6 @@ model.intercept_
 1. データセットのサンプルサイズを増やす
 2. ハイパーパラメータを調整する
 3. 他のアルゴリズムを使用する
-
-## 可視化
-
-```
-# 箱を準備
-fig = plt.figure(figsize=(7, 10))
-
-# 重回帰分析
-ax1 = fig.add_subplot(2, 1, 1)
-ax1.bar(x=columns, height=model.coef_)
-ax1.set_title('Linear Regression')
-
-# リッジ回帰
-ax2 = fig.add_subplot(2, 1, 2)
-ax2.bar(x=columns, height=ridge.coef_)
-ax2.set_title('Ridge Regression');
-```
 
 ## 多重共線性
 入力変数同士の相関が強いものが含まれている場合、多重共線性 (Multicollinearity) という問題が起こる。
@@ -344,6 +327,19 @@ plt.figure(figsize=(10, 7))
 plt.bar(x=columns, height=model.coef_);
 
 plt.hist(df['bmi'])
+
+# 箱を準備
+fig = plt.figure(figsize=(7, 10))
+
+# 重回帰分析
+ax1 = fig.add_subplot(2, 1, 1)
+ax1.bar(x=columns, height=model.coef_)
+ax1.set_title('Linear Regression')
+
+# リッジ回帰
+ax2 = fig.add_subplot(2, 1, 2)
+ax2.bar(x=columns, height=ridge.coef_)
+ax2.set_title('Ridge Regression');
 ```
 
 ## 特徴量エンジニアリング
