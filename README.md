@@ -20,7 +20,7 @@
 
 xは入力変数、yは予測値、wは重み(パラメータ)を表しており、重回帰分析ではこのwの値を予測する。
 
-## Sklearnのデータセット読み込み
+## データ準備令
 
 ```
 # データセットの読み込み
@@ -28,34 +28,24 @@ from sklearn.datasets import load_boston
 dataset = load_boston()
 x, t = dataset.data, dataset.target
 columns = dataset.feature_names
-```
 
-## PandasのDataFrameに変更
-```
+# PandasのDataFrameに変更
 df = pd.DataFrame(x, columns=columns)
-```
 
-## PandasのDataFrameに列を追加
-
-```
+# PandasのDataFrameに列を追加
 df['Target'] = t
-```
 
-## 入力変数と出力変数の切り分け
-
-```
 # 入力変数と出力変数の切り分け
 t = df['Target'].values
 x = df.drop(labels=['Target'], axis=1).values
-```
 
-## .valuesに意味
-pandas.core.series.Series -> numpy.ndarrayに変換
-```
+# .valuesに意味
+# pandas.core.series.Series -> numpy.ndarrayに変換
+# scikit-learn を用いて機械学習アルゴリズムを実装を行う際には
+# NumPy の ndarray に変換したほうが良い
+
 type(df['Target']), type(df['Target'].values)
 ```
-
-scikit-learn を用いて機械学習アルゴリズムを実装を行う際には NumPy の ndarray に変換する必要がある。
 
 ## データセットの分割
 
